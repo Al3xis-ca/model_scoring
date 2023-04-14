@@ -53,23 +53,28 @@ def main():
             unsafe_allow_html=True,
         )
 
+    
+    
     score = prediction['score']
     fig = go.Figure(go.Indicator(
     mode="gauge+number",
     value=score[0] * 100,
-    title={'text': "Prediction", 'font': {'size': 20}},  # Augmenter la taille du titre
+    title={'text': "Probabilité de faillite", 'font': {'size': 20}},  # Augmenter la taille du titre
     domain={'x': [0, 1], 'y': [0, 1]},
     gauge={
         'axis': {'range': [0, 100]},
+        'bar': {'color': "red"},  # Change la couleur de la partie mobile de la jauge
         'steps': [
             {'range': [0, 25], 'color': "lightgray"},
             {'range': [25, 50], 'color': "gray"},
-            {'range': [50, 75], 'color': "lightgreen"},
-            {'range': [75, 100], 'color': "green"}],
+            {'range': [50, 75], 'color': "lightsalmon"},  # Change la couleur de fond
+            {'range': [75, 100], 'color': "salmon"}],  # Change la couleur de fond
         'threshold': {
             'line': {'color': "red", 'width': 3},
             'thickness': 0.75,
             'value': score[0] * 100}}))
+    
+           
 
     fig.update_layout(height=250, width=350,
                     font={'color': 'black', 'family': 'Sofia Pro', 'size': 20},
@@ -123,15 +128,15 @@ def main():
         
         st.image('occupation_type.png', use_column_width=True)
         st.write("### Client")
-        st.write(infos_client()["metier"])
+        st.write(infos_client()["Metier"])
         st.write("### Clients même profile")
-        st.write(load_voisins()['OCCUPATION_TYPE'])
+        st.write(load_voisins()['Metier'])
         
         st.image('education_type.png', use_column_width=True)
         st.write("### Client")
-        #st.write(infos_client()["etude"])
+        st.write(infos_client()["Education"])          
         st.write("### Clients même profile")
-        st.write(load_voisins()['NAME_EDUCATION_TYPE'])
+        st.write(load_voisins()['Education'])
           
          
 @st.cache_data()
@@ -145,7 +150,6 @@ def get_client_features():
     response = requests.get(URL_API + "get_client_features", params={"id_client": id_client})
     client_features = json.loads(response.content.decode("utf-8"))
     client_features = pd.DataFrame.from_dict(client_features, orient='index').T
-    print(client_features)
     return client_features
     
 
