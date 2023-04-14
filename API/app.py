@@ -34,24 +34,16 @@ def infos_client():
     data_client = app_test[app_test["SK_ID_CURR"] == int(id)]
     dict_infos = {
        #"status_famille": data_client["NAME_FAMILY_STATUS"].item(),
-       "nb_enfant": data_client["CNT_CHILDREN"].item(),
-       "age": int(data_client["DAYS_BIRTH"].values / -365),
-       "revenus": data_client["AMT_INCOME_TOTAL"].item(),
-       "montant_credit": data_client["AMT_CREDIT"].item(),
-       "annuites": data_client["AMT_ANNUITY"].item(),
-       "montant_bien": data_client["AMT_GOODS_PRICE"].item(),
-       "metier"      : data_client["OCCUPATION_TYPE"].item()
+       "Nb_enfant": data_client["CNT_CHILDREN"].item(),
+       "Age": int(data_client["DAYS_BIRTH"].values / -365),
+       "Revenus": data_client["AMT_INCOME_TOTAL"].item(),
+       "Montant_credit": data_client["AMT_CREDIT"].item(),
+       "Annuites": data_client["AMT_ANNUITY"].item(),
+       "Montant_bien": data_client["AMT_GOODS_PRICE"].item(),
+       "Metier"      : data_client["OCCUPATION_TYPE"].item(),
+       "Education"      : data_client["NAME_EDUCATION_TYPE"].item()
     }
-    # dict_infos = {
-    #    "status_famille": data_client["NAME_FAMILY_STATUS"].item(),
-    #    "nb_enfant": data_client["CNT_CHILDREN"].item(),
-    #    "age": int(data_client["DAYS_BIRTH"].values / -365),
-    #    "revenus": data_client["AMT_INCOME_TOTAL"].item(),
-    #    "montant_credit": data_client["AMT_CREDIT"].item(),
-    #    "annuites": data_client["AMT_ANNUITY"].item(),
-    #    "montant_bien": data_client["AMT_GOODS_PRICE"].item()
-    # }
-    #response = json.dumps(dict_infos)  # Convertir le dictionnaire en JSON
+    
     return jsonify(dict_infos)
 
 @app.route('/predict', methods = ['GET'])
@@ -66,12 +58,11 @@ def predict():
     else :
         X = df_test[df_test['SK_ID_CURR'] == id]
         X.drop('SK_ID_CURR', axis=1, inplace=True) 
-        print(X)
         probability_default_payment = model.predict_proba(X)[:, 1]
         if probability_default_payment >= seuil:
-            prediction = "Prêt Accordé"
-        else:
             prediction = "Prêt Non Accordé"
+        else:
+            prediction = "Prêt Accordé"
     return jsonify({"prediction": prediction, "score": probability_default_payment.tolist()})
 
 
@@ -80,39 +71,15 @@ def get_client_features():
     id = request.args.get("id_client")
     client_data = df_test[df_test["SK_ID_CURR"] == int(id)]
     client_data['index'] = client_data.index
-    print(client_data)
     client_data.drop('SK_ID_CURR', axis=1, inplace=True) 
     #print(client_data)
     return jsonify(client_data.to_dict(orient='records')[0])
     #return jsonify(client_data.to_dict(orient='records'))
 
-
-
-
-# @app.route("/load_voisins", methods=["GET"])
-# def load_voisins():
-#     id = request.args.get("id_client")
-#     interpretable_important_data = ['SK_ID_CURR',
-#                                     'PAYMENT_RATE',
-#                                     'AMT_ANNUITY',
-#                                     'DAYS_BIRTH',
-#                                     'DAYS_EMPLOYED',
-#                                     'ANNUITY_INCOME_PERC']
-#     data_client = df_test[df_test["SK_ID_CURR"] == int(id)][interpretable_important_data].values
-#     distances, indices = knn.kneighbors(data_client)
-#     df_train_selected = df_train[interpretable_important_data]  
-#     df_voisins = df_train_selected.iloc[indices[0], :]  
-#     return jsonify(df_voisins.to_dict(orient='records'))
-
 @app.route("/load_voisins", methods=["GET"])
 #id = 100005
 def load_voisins():
     id = request.args.get("id_client")
-    # interpretable_important_data = [    'PAYMENT_RATE',
-    #                                 'AMT_ANNUITY',
-    #                                 'DAYS_BIRTH',
-    #                                 'DAYS_EMPLOYED',
-    #                                 'ANNUITY_INCOME_PERC']
     interpretable_important_data = ['EXT_SOURCE_2',
                                     'EXT_SOURCE_3',
                                     'EXT_SOURCE_1',
@@ -136,8 +103,7 @@ def load_voisins():
     df_voisins = X_train_selected.iloc[indices[0], :]
     # Selection des colonnes à afficher
     affichage_colonne = [    
-                            'SK_ID_CURR',
-                            'AMT_ANNUITY',
+                             'AMT_ANNUITY',
                              'DAYS_BIRTH',
                              'DAYS_EMPLOYED',
                              'NAME_EDUCATION_TYPE',
@@ -145,6 +111,9 @@ def load_voisins():
 
                          ]
     df_voisins = app_train.loc[df_voisins.index][affichage_colonne]
+    #Créez un dictionnaire pour mapper les anciens noms de colonnes aux nouveaux noms de colonnes
+       
+    
     # traitement champ Day employed
     from datetime import datetime, timedelta
     from dateutil.relativedelta import relativedelta
@@ -156,6 +125,16 @@ def load_voisins():
     df_voisins['DAYS_EMPLOYED'] = df_voisins['DAYS_EMPLOYED'].apply(days_to_duration)
     # traitement de Day birth
     df_voisins['DAYS_BIRTH'] = df_voisins['DAYS_BIRTH'].apply(lambda x: int(x / -365))
+    nouveaux_noms = {
+                
+        'AMT_ANNUITY': 'Annuités',
+        'DAYS_BIRTH': 'Age',
+        'DAYS_EMPLOYED': 'Jours employés',
+        'NAME_EDUCATION_TYPE': 'Education',
+        'OCCUPATION_TYPE': 'Metier'
+        }
+    df_voisins = df_voisins.rename(columns=nouveaux_noms)
+                                                                 
     return jsonify(df_voisins.to_dict(orient='records'))
 
 
